@@ -13,10 +13,12 @@
 #+OPTIONS: ^:{}
 * Okta and AWS in the Browser
   The sample application below authenticates users using [[http://docs.aws.amazon.com/STS/latest/UsingSTS/web-identity-federation.html][web identity
-  federation]] and Okta. After logging in, the user will get
-  temporary AWS credentials and assume the pre-specified [[http://docs.aws.amazon.com/IAM/latest/UserGuide/roles-toplevel.html][IAM (AWS
-  Identity and Access Management)]] role whose policy allows uploading
-  and listing objects in [[http://aws.amazon.com/s3/][Amazon S3]].
+  federation]] and Okta. This guide is based on the AWS
+  "[[https://aws.amazon.com/developers/getting-started/browser/][JavaScript in the Browser]]" document.
+
+  After logging in, the user will get temporary AWS credentials and
+  assume the pre-specified [[http://docs.aws.amazon.com/IAM/latest/UserGuide/roles-toplevel.html][IAM (AWS Identity and Access Management)]]
+  role whose policy allows uploading and listing objects in [[http://aws.amazon.com/s3/][Amazon S3]].
 
   This guide is designed to walk readers through integrating an
   AWS-backed JavaScript web application with a third-party identity
@@ -200,8 +202,13 @@
      bucket, with 'public-read' permissions.
 ** Additional Resources
    For in-depth user guides, API documentation, developer forums, and
-   other developer resources, see the AWS SDK for JavaScript in the
-   Browser page.
+   other developer resources, see the [[https://aws.amazon.com/sdk-for-browser/][AWS SDK for JavaScript in the
+   Browser]] page.
+
+   For more details on the Okta Sign-In Widget, see the
+   [[http://developer.okta.com/code/javascript/okta_sign-in_widget.html][Okta Sign-In Widget Overview]] or the
+   [[http://developer.okta.com/code/javascript/okta_sign-in_widget_ref][Okta Sign-In Widget reference]].
+
 
 * Code
   This section describes the code used in this sample
@@ -209,8 +216,10 @@
   about how the sample application works.
 
   This sample consists of two logical components:
+
   1. The HTML for a sample Single Page Application
   2. The JavaScript that powers this sample Single Page Application
+
 ** sample.html
 
    The HTML for this sample is below. By default we show the Okta

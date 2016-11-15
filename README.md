@@ -1,10 +1,12 @@
 # Okta and AWS in the Browser
 
 The sample application below authenticates users using [web identity
-federation](http://docs.aws.amazon.com/STS/latest/UsingSTS/web-identity-federation.html) and Okta. After logging in, the user will get
-temporary AWS credentials and assume the pre-specified [IAM (AWS
-Identity and Access Management)](http://docs.aws.amazon.com/IAM/latest/UserGuide/roles-toplevel.html) role whose policy allows uploading
-and listing objects in [Amazon S3](http://aws.amazon.com/s3/).
+federation](http://docs.aws.amazon.com/STS/latest/UsingSTS/web-identity-federation.html) and Okta. This guide is based on the AWS
+"[JavaScript in the Browser](https://aws.amazon.com/developers/getting-started/browser/)" document.
+
+After logging in, the user will get temporary AWS credentials and
+assume the pre-specified [IAM (AWS Identity and Access Management)](http://docs.aws.amazon.com/IAM/latest/UserGuide/roles-toplevel.html)
+role whose policy allows uploading and listing objects in [Amazon S3](http://aws.amazon.com/s3/).
 
 This guide is designed to walk readers through integrating an
 AWS-backed JavaScript web application with a third-party identity
@@ -325,8 +327,12 @@ This sample application is designed to show you how to:
 ## Additional Resources
 
 For in-depth user guides, API documentation, developer forums, and
-other developer resources, see the AWS SDK for JavaScript in the
-Browser page.
+other developer resources, see the [AWS SDK for JavaScript in the
+Browser](https://aws.amazon.com/sdk-for-browser/) page.
+
+For more details on the Okta Sign-In Widget, see the
+[Okta Sign-In Widget Overview](http://developer.okta.com/code/javascript/okta_sign-in_widget.html) or the
+[Okta Sign-In Widget reference](http://developer.okta.com/code/javascript/okta_sign-in_widget_ref).
 
 # Code
 
@@ -335,6 +341,7 @@ application. You only need to read this if you want to learn more
 about how the sample application works.
 
 This sample consists of two logical components:
+
 1.  The HTML for a sample Single Page Application
 2.  The JavaScript that powers this sample Single Page Application
 
