@@ -587,6 +587,8 @@ After checking for an error (`err`), we do the following:
 -   Show the buttons for selecting a file and uploading it to S3 (`uploadDialog`)
 -   List any objects that the user might have uploaded previously.
 
+&nbsp;
+
     AWS.config.credentials.get(function(err) {
         if (err) {
             console.log("Error creating AWS Web Identity: " + err);

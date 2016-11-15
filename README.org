@@ -471,6 +471,7 @@
    - Show the buttons for selecting a file and uploading it to S3 (=uploadDialog=)
    - List any objects that the user might have uploaded previously.
 
+   &nbsp;
    #+NAME: login-to-aws
    #+BEGIN_SRC javascript
      AWS.config.credentials.get(function(err) {
