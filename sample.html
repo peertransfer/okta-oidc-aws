@@ -18,9 +18,10 @@
     <script type="text/javascript">
       // e.g.: example.okta.com
       var AWS_OIDC_PROVIDER_URL = 'YOUR_OIDC_PROVIDER_URL';
-      // This tells Cognito which Cognito identity pool to use
-      // e.g.: us-east-1:0a1bc234-567d-89e0-1fg2-hi34jk5lm678
-      var AWS_IDENTITY_POOL_ID = 'YOUR_AWS_IDENTITY_POOL_ID';
+      // e.g.: arn:aws:iam::123456789012:role/OktaSampleRole
+      var AWS_ROLE_ARN = 'YOUR_AWS_ROLE_ARN';
+      // e.g.: us-east-1
+      var AWS_REGION = 'YOUR_AWS_REGION';
       // e.g.: example-s3-bucket
       var AWS_S3_BUCKET_NAME = 'YOUR_S3_BUCKET_NAME';
       
@@ -29,7 +30,7 @@
       // e.g.: aBCdEf0GhiJkLMno1pq2
       var OKTA_CLIENT_ID = 'YOUR_OKTA_APP_CLIENT_ID';
       
-      AWS.config.region = AWS_IDENTITY_POOL_ID.split(':')[0];
+      AWS.config.region = AWS_REGION;
       AWS.config.logger = console;
       
       var oktaUserId;
@@ -45,7 +46,7 @@
           var file = fileChooser.files[0];
           if (file) {
               results.innerHTML = '';
-              // e.g.: "okta-us-east-1:01a23bcd-e456-7f8g-9012-h345i6789jkl/Ajax-loader.gif"
+              // e.g.: "okta-00u0abcd1eFghIJKl2m3/Ajax-loader.gif"
               var objKey = 'okta-' + oktaUserId + '/' + file.name;
               var params = {
                   Key: objKey,
@@ -96,15 +97,14 @@
               if (res.status === 'SUCCESS') {
                   console.log('User successfully authenticated');
                   console.log(res);
-                  var logins = {};
-                  logins[AWS_OIDC_PROVIDER_URL] = res.idToken;
-                  AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-                      IdentityPoolId: AWS_IDENTITY_POOL_ID,
-                      Logins: logins
+                  oktaUserId = res.claims.sub;
+                  AWS.config.credentials = new AWS.WebIdentityCredentials({
+                      RoleArn: AWS_ROLE_ARN,
+                      WebIdentityToken: res.idToken
                   });
                   AWS.config.credentials.get(function(err) {
                       if (err) {
-                          console.log("Error creating Cognito identity: " + err);
+                          console.log("Error creating AWS Web Identity: " + err);
                           return;
                       }
                       bucket = new AWS.S3({
@@ -112,7 +112,6 @@
                               Bucket: AWS_S3_BUCKET_NAME
                           }
                       });
-                      oktaUserId = AWS.config.credentials.identityId;
                       oktaLoginContainer.style.display = 'none';
                       uploadDialog.style.display = 'block';
                       listObjs();

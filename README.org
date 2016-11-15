@@ -22,15 +22,43 @@
   AWS-backed JavaScript web application with a third-party identity
   provider, setting up properly scoped permissions for federated access
   to AWS APIs, and basic usage of the AWS SDK for JavaScript.
-** NOTE!
-   As of 2016-11-11, this sample code will /not/ work. AWS requires
-   that Okta publish [[https://tools.ietf.org/html/rfc7517#section-4.7][the =x5c= parameter]] in the =jwks_uri=, which Okta
-   does not currently do.
+** BETA
+   Note, these instructions require that your Okta Org is part of the
+   *OpenID Connect Beta*. If you do not have the ability to create
+   OpenID Connect apps in your Okta org, please contact Okta Support
+   and ask that the =OPENID_CONNECT= flag be enabled on your Okta org.
+** Create an Okta OIDC App and get the Client ID for that app
+   You will need an OpenID Connect app in Okta for this sample
+   application. You can create an OpenID Connect app as follows:
 
-   If you need to get this working, please write up your usecase and
-   send it to:
-   - Joël Franusic <joel.franusic@okta.com>
-   - Karl McGuinness <kmcguinness@okta.com>
+   1. Log in to your Okta org
+   2. After loggin in, click on the "Admin" button on the upper right
+      of the screen.
+   3. Select "Add Applications" from the "Shortcuts" section on the
+      right side of the screen.
+   4. Click the "Create New App" button on the left side of the
+      screen.
+   5. Set the "Platform" to: "Single Plage App (SPA)", click the
+      "Create" button.
+   6. Name the application (e.g. =AWS Example=), click the "Next" button.
+   7. Click "Add URI" and add the =http://localhost:8000/sample.html=
+      URI, then click the "Finish" button.
+   8. Click on the "People" section, click "Assign to People", click
+      the "Assign" button next to your username, click "Save and Go
+      Back", click "Done" - *Important:* only users assigned to this
+      app will be able to authenticate!
+   9. Click on the "General" section, scroll down and make note of the
+      "*Client ID*", you will use this when you configure AWS.
+** Set up CORS in Okta
+   This sample application also requires that you enable CORS in Okta,
+   do this as follows.
+
+   1. From the "Security" menu in the Admin interface, select the
+      "API" option.
+   2. Click on the "CORS" tab in the API screen.
+   3. Click the "Edit" button, make sure the "Enable CORS ..." option
+      is selected, enter =http://localhost:8000= into the text field,
+      then click the "Save" button.
 ** Create an Amazon S3 bucket and configure CORS
    [[http://en.wikipedia.org/wiki/Cross-origin_resource_sharing][CORS]] needs to be configured on the Amazon S3 bucket to be accessed
    directly from JavaScript in the browser.
@@ -57,82 +85,16 @@
         </CORSRule>
      </CORSConfiguration>
    #+END_SRC
-
-** Calculate a "thumprint" to give to AWS
-   You will need to generate a "thumbprint" for AWS to use to validate
-   =id_tokens=
-   For AWS to validate an OIDC =id_token= from Okta, you need to give
-   AWS the "thumbprint" of the x509 certificate from the =x5c=
-   parameter in the =jwks_uri=, this thumprint is the SHA1 hash of the
-   DER encoded x509 certificate that contains the public key which
-   will be used to validate =id_tokens= from Okta.
-
-   By default AWS assumes that the private key used by the HTTPS server
-   on the domain from which a JWT is issued is the same private key
-   that is used to sign the JWTs.
-
-   Here is how AWS generates a thumbprint for the HTTPS server:
-   http://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
-
-   To verify the thumbprint that you see, you can run this command:
-   #+BEGIN_SRC sh  :exports both
-     domain="example.okta.com"
-     (echo "" | openssl s_client -showcerts -connect $domain:443 2> /dev/null) | grep -A27 -- '-----BEGIN CERTIFICATE-----' | tail -28 | \
-     openssl x509 -fingerprint -noout | \
-     cut -d '=' -f 2 | \
-     tr -d ':' | \
-     tr '[:upper:]' '[:lower:]'
-   #+END_SRC
-
-   #+RESULTS:
-   : a031c46782e6e6c662c2c87c76da9aa62ccabd8e
-
-
-   However, Okta does /not/ sign our JWTs or =id_tokens= using the
-   same private key as we use for HTTPS/TLS, we generate a different
-   keypair to sign our JWTs, this keypair is different for each Okta
-   Org, and will eventually be rotated on a regular basis.
-
-   Below is how to configure an AWS IAM OIDC Identity Provider to with the
-   correct thumbprint for validating OIDC =id_token= s from Okta.
-
-   To do this, we do the following:
-   1. Get the =jwks_uri= from the =/.well-known/openid-configuration=
-      endpoint for our Okta org. (AWS will fetch this URL the first
-      time that you configure an Identity Provider in AWS/IAM.
-   2. Pull out the first x509 certificate from the first key using the
-      jq expression =.keys[0].x5c[0]=
-   3. Remove the quote character from the string using =tr=
-   4. Base64 decode the string and pass to =openssl=, asking =openssl=
-      to give us the fingerprint for that key, telling
-      =openssl= that the input is a DER encoded x509 certificate
-   5. Use =cut= and =tr= to clean up the format of the fingerprint
-      suitable for pasting into AWS.
-
-   If the =x5c= parameter is included in the =jwks_uri=, then you will
-   be able to use this command below to generate a thumbprint for the
-   x509 certificate.
-
-   #+BEGIN_SRC sh :results code :exports both
-     domain="example.okta.com"
-     jwks_uri=`curl -s https://${domain}/.well-known/openid-configuration | jq -r .jwks_uri`;
-     curl -s $jwks_uri | \
-         jq '.keys[0].x5c[0]' | \
-         tr -d '"' | \
-         base64 -D | \
-         openssl x509 -inform DER -fingerprint -noout | \
-         cut -d '=' -f 2 | \
-         tr -d ':' | \
-         tr '[:upper:]' '[:lower:]'
-   #+END_SRC
-
-   Once we've configured the Identity Provider with the thumbprint,
-   AWS will be able to validate an =id_token= from Okta.
-** Create an Okta OIDC App and get the Client ID for that app
-   You will need to create an OIDC App in Okta, then copy the Client
-   ID.
-
-   FIXME: This will need to be updated if this document is ever made public.
+** Create an IAM OpenID Connect Provider
+   1. Go to the *Identity Providers* section of the [[https://console.aws.amazon.com/iam/home#policies][IAM console]] and
+      click the "Create Provider" button, select "OpenID Connect",
+      enter your Okta org URL as the *Provider URL*
+      (e.g. =https://example.okta.com=), enter your Okta app /Client ID/ as the
+      *Audience*, click "Next Step"
+   2. Click "Create" to skip the "Verify Provider Information" instructions.
+      /This step is for OIDC providers that sign their OIDC tokens/
+      /using the private key from their HTTPS/TLS certificate. Okta/
+      /signs OIDC tokens using different keys/
 ** Create an IAM Role and Assign Users Logged in through Okta
    1. Go to the *Policies* section of the [[https://console.aws.amazon.com/iam/home#policies][IAM console]] and click
       *Create Policy → Create Your Own Policy*.
@@ -142,12 +104,16 @@
       click *Create Policy*.
    3. Now go to the *Roles* section of the IAM console and click
       *Create New Role*
-   4. Name your role and select
+   4. Name your role (e.g. =OktaSampleRole=) and select
       *Role for Identity Provider Access → Grant access to web identity providers.*
-   5. FIXME: Select Facebook and type in your Facebook App ID.
-   6. Click Next Step on Verify Role Trust.
-   7. On the *Attach Policy* step, select the policy you just created,
-      and click *Next Step*, then *Create Role* on the next page.
+   5. Select your Okta org from the *Identity Provider* dropdown and
+      click "Next Step"
+   6. Click "Next Step" on Verify Role Trust.
+   7. On the *Attach Policy* step, select the policy you just created
+      (e.g. =OktaSample=), and click *Next Step*, then *Create Role*
+      on the next page.
+   8. *Important:* Make sure that you replace =YOUR_BUCKET_NAME= and
+      =YOUR_OIDC_PROVIDER_URL= in the policy!
 
    &nbsp;
    #+BEGIN_SRC javascript
@@ -160,7 +126,7 @@
                      "s3:PutObjectAcl"
                  ],
                  "Resource": [
-                     "arn:aws:s3:::YOUR_BUCKET_NAME/okta-${cognito-identity.amazonaws.com:sub}/*"
+                     "arn:aws:s3:::YOUR_BUCKET_NAME/okta-${YOUR_OIDC_PROVIDER_URL:sub}/*"
                  ],
                  "Effect": "Allow"
              },
@@ -174,33 +140,56 @@
                  "Effect": "Allow",
                  "Condition": {
                      "StringEquals": {
-                         "s3:prefix": "okta-${cognito-identity.amazonaws.com:sub}"
+                         "s3:prefix": "okta-${YOUR_OIDC_PROVIDER_URL:sub}"
                      }
                  }
              }
          ]
      }
    #+END_SRC
-** Create a sample.html File Containing the Code Below
-   Before you can run the example, you need to replace '*YOUR_APP_ID*',
-   '*YOUR_ROLE_ARN*', '*YOUR_BUCKET_NAME*', and '*YOUR_BUCKET_REGION*' with
-   appropriate values. [[http://docs.aws.amazon.com/general/latest/gr/rande.html][Region]] takes the form of '/us-east-1/' (US
-   Standard), '/us-west-2/' (Oregon), etc. The ARN (Amazon Resource
-   Name) of your IAM role can be found in the [[https://console.aws.amazon.com/iam/home?#roles][IAM console]] by selecting
-   your role and opening the *Summary* tab.
+
+   #+BEGIN_QUOTE
+   If you are wondering, this policy uses [[http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html][IAM Policy Variables]] to
+   restricts listing only the files that they have uploaded.
+   #+END_QUOTE
+** Create a sample.html file containing the code below
+   Before you can run the example, you need to replace the variables
+   below with the approprate variables for your system:
+   - YOUR_OIDC_PROVIDER_URL
+   - YOUR_AWS_ROLE_ARN
+
+     The ARN (Amazon Resource Name) of your IAM role can be found in
+     the [[https://console.aws.amazon.com/iam/home?#roles][IAM console]] by selecting your role and opening the *Summary*
+     tab.
+
+   - YOUR_AWS_REGION
+
+     [[http://docs.aws.amazon.com/general/latest/gr/rande.html][Region]] takes the form of '/us-east-1/' (US Standard),
+     '/us-west-2/' (Oregon), etc.
+
+   - YOUR_S3_BUCKET_NAME
+   - YOUR_OKTA_ORG_URL
+   - YOUR_OKTA_APP_CLIENT_ID
 
    #+BEGIN_SRC html :tangle sample.html :noweb yes :export yes
    <<sample-html>>
    #+END_SRC
-
 ** Run the Sample
+
+   Start a webserver on your server on port 8000 and visit
+   http://localhost:8000/sample.html
+
+   If you are on Mac OS X or Linux, you can use Python to
+   start a webserver for you: =cd= to the directory where
+   =sample.html= is located, then run this command:
+
    #+BEGIN_EXAMPLE
-   http://YOUR_DOMAIN/sample.html
+   python -m SimpleHTTPServer 8000
    #+END_EXAMPLE
 ** About the Sample
    This sample application is designed to show you how to:
-   - Use the AWS Web Identity Federation and Facebook login to
-     authenticate users.
+   - Use the AWS Web Identity Federation and Okta to authenticate
+     users.
    - Assign user-specific write permissions at the prefix level with
      IAM role policy so that users can't overwrite or change other
      users' objects.
@@ -213,8 +202,11 @@
    other developer resources, see the AWS SDK for JavaScript in the
    Browser page.
 
-   FIXME: Add links to Okta resources too.
 * Code
+  This section describes the code used in this sample
+  application. You only need to read this if you want to learn more
+  about how the sample application works.
+
   This sample consists of two logical components:
   1. The HTML for a sample Single Page Application
   2. The JavaScript that powers this sample Single Page Application
@@ -265,15 +257,15 @@
       to AWS. It will look something like "example.okta.com" or
       "example.oktapreview.com"
 
-   2. An *AWS Identity Pool*.
+   2. An *AWS Role ARN*.
 
-      This Identity Pool must be configured so that users which
-      succesfullly authenticate into the identity pool will have
-      approprate permissions to read and write to the S3 bucket below.
+      The [[http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html][Amazon Resource Name]] for the IAM Role that Okta users will
+      be placed into.
 
-      Configuration for this Identity Pool are above.
+   3. The *AWS Region* you've configured your IAM OpenID Connect
+      Provider in.
 
-   3. An *S3 Bucket*.
+   4. The *S3 Bucket* that yor AWS Role grants permissions to.
 
 
    The JavaScript in =sample.html= is described below.
@@ -283,12 +275,17 @@
    #+BEGIN_SRC javascript
      // e.g.: example.okta.com
      var AWS_OIDC_PROVIDER_URL = 'YOUR_OIDC_PROVIDER_URL';
-     // This tells Cognito which Cognito identity pool to use
-     // e.g.: us-east-1:0a1bc234-567d-89e0-1fg2-hi34jk5lm678
-     var AWS_IDENTITY_POOL_ID = 'YOUR_AWS_IDENTITY_POOL_ID';
+     // e.g.: arn:aws:iam::123456789012:role/OktaSampleRole
+     var AWS_ROLE_ARN = 'YOUR_AWS_ROLE_ARN';
+     // e.g.: us-east-1
+     var AWS_REGION = 'YOUR_AWS_REGION';
      // e.g.: example-s3-bucket
      var AWS_S3_BUCKET_NAME = 'YOUR_S3_BUCKET_NAME';
    #+END_SRC
+
+   For Okta, we need the following:
+   1. The Okta org URL
+   2. The Client ID for the Okta app that users will be assigned to.
 
    The variables below are needed to configure the Okta Sign-In widget:
    #+NAME: okta-config-variables
@@ -299,15 +296,11 @@
      var OKTA_CLIENT_ID = 'YOUR_OKTA_APP_CLIENT_ID';
    #+END_SRC
 
-   This code initializes the AWS JavaScript SDK. Note that the AWS
-   region is derived from the AWS Identity Pool ID, which might not be
-   what you want!
-
-   We also configure the SDK to send logging information to the
-   JavaScript console.
+   This code initializes the AWS JavaScript SDK. We also configure the
+   SDK to send logging information to the JavaScript console.
    #+NAME: aws-setup
    #+BEGIN_SRC javascript
-     AWS.config.region = AWS_IDENTITY_POOL_ID.split(':')[0];
+     AWS.config.region = AWS_REGION;
      AWS.config.logger = console;
    #+END_SRC
 
@@ -343,7 +336,7 @@
 
    This code sets up a event listener for the "Upload to S3"
    button. The "Upload to S3" button is hidden until a user has
-   succesfully authentiated against Okta and AWS Cognito. Note the use
+   succesfully authentiated against Okta and AWS. Note the use
    of the =bucket= global variable, which is only populated after a
    user sucessfully authenticates.
 
@@ -353,7 +346,7 @@
          var file = fileChooser.files[0];
          if (file) {
              results.innerHTML = '';
-             // e.g.: "okta-us-east-1:01a23bcd-e456-7f8g-9012-h345i6789jkl/Ajax-loader.gif"
+             // e.g.: "okta-00u0abcd1eFghIJKl2m3/Ajax-loader.gif"
              var objKey = 'okta-' + oktaUserId + '/' + file.name;
              var params = {
                  Key: objKey,
@@ -439,41 +432,40 @@
      );
    #+END_SRC
 
-   Upon a successful login, we log the value of the Okta user resource
-   "=res=" to the JavaScript =console= and then use the OIDC id_token
-   (=res.idToken=) to configure the Cognito Identity Credentials object.
-   #+NAME: setup-cognito-credentials
+   Upon a successful login, we do the following:
+   - Log the value of the Okta user resource  "=res=" to the
+     JavaScript =console=
+   - Configure the =oktaUserId= global with the proper Okta User ID or
+     "subject".
+   - Use the OIDC id_token (=res.idToken=) to configure a Web
+     Identity Credentials object.
+   #+NAME: setup-aws-credentials
    #+BEGIN_SRC javascript
      console.log('User successfully authenticated');
      console.log(res);
-     var logins = {};
-     logins[AWS_OIDC_PROVIDER_URL] = res.idToken;
-     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-         IdentityPoolId: AWS_IDENTITY_POOL_ID,
-         Logins: logins
+     oktaUserId = res.claims.sub;
+     AWS.config.credentials = new AWS.WebIdentityCredentials({
+         RoleArn: AWS_ROLE_ARN,
+         WebIdentityToken: res.idToken
      });
    #+END_SRC
 
    Once we have configured the =AWS.config.credentials= object, we
-   call the =.get()= method to use authenticate against Cognito using
+   call the =.get()= method to use authenticate against AWS using
    the OIDC id_token we got from Okta.
 
    After checking for an error (=err=), we do the following:
-   - Define an AWS S3 =bucket= object for other parts of the example
-     to use
-     FIXME: Why here?
-   - Configure the =oktaUserId= global
+   - Define an AWS S3 =bucket= object in the context of a logged in
+     user, for other parts of the example to use.
    - Hide the Okta Sign-In Widget (=oktaLoginContainer=)
    - Show the buttons for selecting a file and uploading it to S3 (=uploadDialog=)
    - List any objects that the user might have uploaded previously.
 
-   FIXME: Determine why we aren't doing this:
-   =oktaUserId = res.claims.sub;=
-   #+NAME: login-to-cognito
+   #+NAME: login-to-aws
    #+BEGIN_SRC javascript
      AWS.config.credentials.get(function(err) {
          if (err) {
-             console.log("Error creating Cognito identity: " + err);
+             console.log("Error creating AWS Web Identity: " + err);
              return;
          }
          bucket = new AWS.S3({
@@ -481,7 +473,6 @@
                  Bucket: AWS_S3_BUCKET_NAME
              }
          });
-         oktaUserId = AWS.config.credentials.identityId;
          oktaLoginContainer.style.display = 'none';
          uploadDialog.style.display = 'block';
          listObjs();
@@ -490,8 +481,8 @@
 ** Additional code                                                 :noexport:
    #+NAME: handle-successful-login
    #+BEGIN_SRC javascript :export none
-     <<setup-cognito-credentials>>
-     <<login-to-cognito>>
+     <<setup-aws-credentials>>
+     <<login-to-aws>>
    #+END_SRC
 
 
