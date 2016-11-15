@@ -169,6 +169,8 @@ below with the approprate variables for your system:
 -   YOUR\_OKTA\_ORG\_URL
 -   YOUR\_OKTA\_APP\_CLIENT\_ID
 
+&nbsp;
+
     <!DOCTYPE html>
     <html>
       <head>
