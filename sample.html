@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
   <head>
@@ -37,90 +36,90 @@
       var bucket;
       
       var fileChooser = document.getElementById('file-chooser');
-      var button = document.getElementById('upload-button');
+      var uploadButton = document.getElementById('upload-button');
       var results = document.getElementById('results');
       var oktaLoginContainer = document.getElementById('okta-login-container');
       var uploadDialog = document.getElementById('upload-dialog');
       
-      button.addEventListener('click', function () {
-          var file = fileChooser.files[0];
-          if (file) {
-              results.innerHTML = '';
-              // e.g.: "okta-00u0abcd1eFghIJKl2m3/Ajax-loader.gif"
-              var objKey = 'okta-' + oktaUserId + '/' + file.name;
-              var params = {
-                  Key: objKey,
-                  ContentType: file.type,
-                  Body: file,
-                  ACL: 'public-read'
-              };
-              bucket.putObject(params, function (err, data) {
-                  if (err) {
-                      results.innerHTML = 'ERROR: ' + err;
-                  } else {
-                      listObjs();
-                  }
-              });
-          } else {
-              results.innerHTML = 'Nothing to upload.';
-          }
+      uploadButton.addEventListener('click', function () {
+        var file = fileChooser.files[0];
+        if (file) {
+          results.innerHTML = '';
+          // e.g.: "okta-00u0abcd1eFghIJKl2m3/Ajax-loader.gif"
+          var objKey = 'okta-' + oktaUserId + '/' + file.name;
+          var params = {
+            Key: objKey,
+            ContentType: file.type,
+            Body: file,
+            ACL: 'public-read'
+          };
+          bucket.putObject(params, function (err, data) {
+            if (err) {
+              results.innerHTML = 'ERROR: ' + err;
+            } else {
+              listObjs();
+            }
+          });
+        } else {
+          results.innerHTML = 'Nothing to upload.';
+        }
       }, false);
       
       function listObjs() {
-          var prefix = 'okta-' + oktaUserId;
-          bucket.listObjects({ Prefix: prefix }, function (err, data) {
-              if (err) {
-                  results.innerHTML = 'ERROR: ' + err;
-              } else {
-                  var objKeys = "";
-                  data.Contents.forEach(function (obj) {
-                      objKeys += obj.Key + "<br>";
-                  });
-                  results.innerHTML = objKeys;
-              }
-          });
+        var prefix = 'okta-' + oktaUserId;
+        bucket.listObjects({ Prefix: prefix }, function (err, data) {
+          if (err) {
+            results.innerHTML = 'ERROR: ' + err;
+          } else {
+            var objKeys = "";
+            data.Contents.forEach(function (obj) {
+              objKeys += obj.Key + "<br>";
+            });
+            results.innerHTML = objKeys;
+          }
+        });
       }
       
       var oktaSignIn = new OktaSignIn({
-          authParams: {
-              responseType: 'id_token',
-              responseMode: 'okta_post_message',
-              scopes: ['openid', 'groups']
-          },
-          clientId: OKTA_CLIENT_ID,
-          baseUrl: OKTA_ORG_URL
+        authParams: {
+          responseType: 'id_token',
+          responseMode: 'okta_post_message',
+          scopes: ['openid', 'groups']
+        },
+        clientId: OKTA_CLIENT_ID,
+        baseUrl: OKTA_ORG_URL
       });
       
       oktaSignIn.renderEl(
-          { el: '#okta-login-container' },
-          function (res) {
-              if (res.status === 'SUCCESS') {
-                  console.log('User successfully authenticated');
-                  console.log(res);
-                  oktaUserId = res.claims.sub;
-                  AWS.config.credentials = new AWS.WebIdentityCredentials({
-                      RoleArn: AWS_ROLE_ARN,
-                      WebIdentityToken: res.idToken
-                  });
-                  AWS.config.credentials.get(function(err) {
-                      if (err) {
-                          console.log("Error creating AWS Web Identity: " + err);
-                          return;
-                      }
-                      bucket = new AWS.S3({
-                          params: {
-                              Bucket: AWS_S3_BUCKET_NAME
-                          }
-                      });
-                      oktaLoginContainer.style.display = 'none';
-                      uploadDialog.style.display = 'block';
-                      listObjs();
-                  });
-              } else {
-                  console.log('Login status is not "SUCCESS"');
-                  console.log(res);
+        { el: '#okta-login-container' },
+        function (res) {
+          if (res.status === 'SUCCESS') {
+            console.log('User successfully authenticated');
+            console.log(res);
+            oktaUserId = res.claims.sub;
+            AWS.config.credentials = new AWS.WebIdentityCredentials({
+              RoleArn: AWS_ROLE_ARN,
+              WebIdentityToken: res.idToken
+            });
+            AWS.config.credentials.get(function(err) {
+              if (err) {
+                console.log("Error creating AWS Web Identity: " + err);
+                return;
               }
+              bucket = new AWS.S3({
+                params: {
+                  Bucket: AWS_S3_BUCKET_NAME
+                }
+              });
+              oktaLoginContainer.style.display = 'none';
+              uploadDialog.style.display = 'block';
+              listObjs();
+            });
+          } else {
+            console.log('Login status is not "SUCCESS"');
+            console.log(res);
           }
+        }
       );
     </script>
   </body>
