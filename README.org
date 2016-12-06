@@ -5,55 +5,58 @@
 # The "cleaner.py" file is generated from this file by running the
 # "M-x org-babel-tangle" command from inside of Emacs.
 #
-# Don't render a Table of Contents
-#+OPTIONS: toc:nil
 # Don't render section numbers
 #+OPTIONS: num:nil
 # Turn of subscript parsing: http://super-user.org/wordpress/2012/02/02/how-to-get-rid-of-subscript-annoyance-in-org-mode/comment-page-1/
 #+OPTIONS: ^:{}
 * Okta and AWS in the Browser
+  This guide is designed to walk readers through the following:
+  - Integrating an AWS-backed JavaScript web application with Okta.
+  - Setting up properly scoped permissions for federated access to AWS APIs.
+  - Basic usage of the AWS SDK for JavaScript.
+
   The sample application below authenticates users using [[http://docs.aws.amazon.com/STS/latest/UsingSTS/web-identity-federation.html][web identity
   federation]] and Okta. This guide is based on the AWS
-  "[[https://aws.amazon.com/developers/getting-started/browser/][JavaScript in the Browser]]" document.
+  [[https://aws.amazon.com/developers/getting-started/browser/][JavaScript in the Browser]] guide.
 
   After logging in, the user will get temporary AWS credentials and
   assume the pre-specified [[http://docs.aws.amazon.com/IAM/latest/UserGuide/roles-toplevel.html][IAM (AWS Identity and Access Management)]]
   role whose policy allows uploading and listing objects in [[http://aws.amazon.com/s3/][Amazon S3]].
 
-  This guide is designed to walk readers through integrating an
-  AWS-backed JavaScript web application with a third-party identity
-  provider, setting up properly scoped permissions for federated access
-  to AWS APIs, and basic usage of the AWS SDK for JavaScript.
-** BETA
-   Note, these instructions require that your Okta Org is part of the
-   *OpenID Connect Beta*. If you do not have the ability to create
-   OpenID Connect apps in your Okta org, please contact Okta Support
-   and ask that the =OPENID_CONNECT= flag be enabled on your Okta org.
+  #+BEGIN_QUOTE
+  **Note**! These instructions require that your Okta Org is part of the
+  *OpenID Connect Beta*. If you do not have the ability to create
+  OpenID Connect apps in your Okta org, please contact Okta Support
+  and ask that the =OPENID_CONNECT= flag be enabled for your Okta org.
+  #+END_QUOTE
+* Setting up Okta
 ** Create an Okta OIDC App and get the Client ID for that app
    You will need an OpenID Connect app in Okta for this sample
    application. You can create an OpenID Connect app as follows:
 
    1. Log in to your Okta org
-   2. After loggin in, click on the "Admin" button on the upper right
+   2. After logging in, click on the "Admin" button on the upper right
       of the screen.
    3. Select "Add Applications" from the "Shortcuts" section on the
       right side of the screen.
    4. Click the "Create New App" button on the left side of the
       screen.
-   5. Set the "Platform" to: "Single Plage App (SPA)", click the
+   5. Set the "Platform" to: "Single Page App (SPA)", click the
       "Create" button.
    6. Name the application (e.g. =AWS Example=), click the "Next" button.
    7. Click "Add URI" and add the =http://localhost:8000/sample.html=
       URI, then click the "Finish" button.
    8. Click on the "People" section, click "Assign to People", click
       the "Assign" button next to your username, click "Save and Go
-      Back", click "Done" - *Important:* only users assigned to this
+      Back", click "Done".
+      #+BEGIN_QUOTE
+      *Important:* only users assigned to this
       app will be able to authenticate!
+      #+END_QUOTE
    9. Click on the "General" section, scroll down and make note of the
       "*Client ID*", you will use this when you configure AWS.
 ** Set up CORS in Okta
-   This sample application also requires that you enable CORS in Okta,
-   do this as follows.
+   This sample application also requires that you [[http://developer.okta.com/docs/api/getting_started/enabling_cors.html][enable CORS]] in Okta.
 
    1. From the "Security" menu in the Admin interface, select the
       "API" option.
@@ -61,6 +64,7 @@
    3. Click the "Edit" button, make sure the "Enable CORS ..." option
       is selected, enter =http://localhost:8000= into the text field,
       then click the "Save" button.
+* Setting up AWS
 ** Create an Amazon S3 bucket and configure CORS
    [[http://en.wikipedia.org/wiki/Cross-origin_resource_sharing][CORS]] needs to be configured on the Amazon S3 bucket to be accessed
    directly from JavaScript in the browser.
@@ -72,21 +76,20 @@
    3. Click the *Properties* tab, open the *Permissions* section, and
       click *Edit CORS Configuration*.
    4. Copy the below XML into the text box and click *Save*.
+      #+BEGIN_SRC xml
+        <?xml version="1.0" encoding="UTF-8"?>
+        <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01">
+           <CORSRule>
+              <AllowedOrigin>*</AllowedOrigin>
+              <AllowedMethod>GET</AllowedMethod>
+              <AllowedMethod>PUT</AllowedMethod>
+              <AllowedMethod>POST</AllowedMethod>
+              <AllowedMethod>DELETE</AllowedMethod>
+              <AllowedHeader>*</AllowedHeader>
+           </CORSRule>
+        </CORSConfiguration>
+      #+END_SRC
 
-   &nbsp;
-   #+BEGIN_SRC xml
-     <?xml version="1.0" encoding="UTF-8"?>
-     <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01">
-        <CORSRule>
-           <AllowedOrigin>*</AllowedOrigin>
-           <AllowedMethod>GET</AllowedMethod>
-           <AllowedMethod>PUT</AllowedMethod>
-           <AllowedMethod>POST</AllowedMethod>
-           <AllowedMethod>DELETE</AllowedMethod>
-           <AllowedHeader>*</AllowedHeader>
-        </CORSRule>
-     </CORSConfiguration>
-   #+END_SRC
 ** Create an IAM OpenID Connect Provider
    1. Go to the *Identity Providers* section of the [[https://console.aws.amazon.com/iam/home#policies][IAM console]] and
       click the "Create Provider" button, select "OpenID Connect",
@@ -114,70 +117,81 @@
    7. On the *Attach Policy* step, select the policy you just created
       (e.g. =OktaSample=), and click *Next Step*, then *Create Role*
       on the next page.
-   8. *Important:* Make sure that you replace =YOUR_BUCKET_NAME= and
+   8. Use the JSON below as your for your role.
+      *Important:* Make sure that you replace =YOUR_BUCKET_NAME= and
       =YOUR_OIDC_PROVIDER_URL= in the policy!
+      #+BEGIN_SRC javascript
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": [
+                        "s3:PutObject",
+                        "s3:PutObjectAcl"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::YOUR_BUCKET_NAME/okta-${YOUR_OIDC_PROVIDER_URL:sub}/*"
+                    ],
+                    "Effect": "Allow"
+                },
+                {
+                    "Action": [
+                        "s3:ListBucket"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::YOUR_BUCKET_NAME"
+                    ],
+                    "Effect": "Allow",
+                    "Condition": {
+                        "StringEquals": {
+                            "s3:prefix": "okta-${YOUR_OIDC_PROVIDER_URL:sub}"
+                        }
+                    }
+                }
+            ]
+        }
+      #+END_SRC
 
-   &nbsp;
-   #+BEGIN_SRC javascript
-     {
-         "Version": "2012-10-17",
-         "Statement": [
-             {
-                 "Action": [
-                     "s3:PutObject",
-                     "s3:PutObjectAcl"
-                 ],
-                 "Resource": [
-                     "arn:aws:s3:::YOUR_BUCKET_NAME/okta-${YOUR_OIDC_PROVIDER_URL:sub}/*"
-                 ],
-                 "Effect": "Allow"
-             },
-             {
-                 "Action": [
-                     "s3:ListBucket"
-                 ],
-                 "Resource": [
-                     "arn:aws:s3:::YOUR_BUCKET_NAME"
-                 ],
-                 "Effect": "Allow",
-                 "Condition": {
-                     "StringEquals": {
-                         "s3:prefix": "okta-${YOUR_OIDC_PROVIDER_URL:sub}"
-                     }
-                 }
-             }
-         ]
-     }
-   #+END_SRC
+      If you are wondering, this policy uses [[http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html][IAM Policy Variables]] to
+      restrict =ListBucket= calls to only the files tha a user has
+      uploaded.
 
-   #+BEGIN_QUOTE
-   If you are wondering, this policy uses [[http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html][IAM Policy Variables]] to
-   restricts listing only the files that they have uploaded.
-   #+END_QUOTE
-** Create a sample.html file containing the code below
-   Before you can run the example, you need to replace the variables
-   below with the approprate variables for your system:
-   - YOUR_OIDC_PROVIDER_URL
-   - YOUR_AWS_ROLE_ARN
+* Running the sample
+** Create =sample.html=
+   Before you can run the example, you need to create a file named =sample.html=
+   containing the code below.
 
-     The ARN (Amazon Resource Name) of your IAM role can be found in
-     the [[https://console.aws.amazon.com/iam/home?#roles][IAM console]] by selecting your role and opening the *Summary*
-     tab.
+   Replace the variables in =sample.html= with the approprate
+   variables for your system. The variables that you will need to
+   replace are below:
 
-   - YOUR_AWS_REGION
+   - =YOUR_OIDC_PROVIDER_URL=
+     i.e. /example.okta.com/
+   - =YOUR_AWS_ROLE_ARN=
+     i.e. /arn:aws:iam::123456789012:role/OktaSampleRole/
+   - =YOUR_AWS_REGION=
+     i.e. /us-east-1/
+   - =YOUR_S3_BUCKET_NAME=
+     i.e. /example-s3-bucket/
+   - =YOUR_OKTA_ORG_URL=
+     i.e. /https://example.okta.com/
+   - =YOUR_OKTA_APP_CLIENT_ID=
+     i.e. /aBCdEf0GhiJkLMno1pq2/
 
-     [[http://docs.aws.amazon.com/general/latest/gr/rande.html][Region]] takes the form of '/us-east-1/' (US Standard),
-     '/us-west-2/' (Oregon), etc.
+  #+BEGIN_QUOTE
+  The ARN (Amazon Resource Name) of your IAM role can be found in
+  the [[https://console.aws.amazon.com/iam/home?#roles][IAM console]] by selecting your role and opening the *Summary*
+  tab.
+  #+END_QUOTE
 
-   - YOUR_S3_BUCKET_NAME
-   - YOUR_OKTA_ORG_URL
-   - YOUR_OKTA_APP_CLIENT_ID
+  The code for =sample.html= is code below.
 
-   &nbsp;
-   #+BEGIN_SRC html :tangle sample.html :noweb yes :export yes
-   <<sample-html>>
-   #+END_SRC
-** Run the Sample
+  Make sure to replace the variables mentioned above!
+
+  #+BEGIN_SRC html :tangle sample.html :noweb yes :export yes
+  <<sample-html>>
+  #+END_SRC
+** Run the sample
 
    Start a webserver on your server on port 8000 and visit
    http://localhost:8000/sample.html
@@ -187,20 +201,20 @@
    =sample.html= is located, then run this command:
 
    #+BEGIN_EXAMPLE
-   python -m SimpleHTTPServer 8000
+   [okta-oidc-aws]$ python -m SimpleHTTPServer 8000
    #+END_EXAMPLE
-** About the Sample
+** About the sample
    This sample application is designed to show you how to:
-   - Use the AWS Web Identity Federation and Okta to authenticate
+   - Use AWS Web Identity Federation and Okta to authenticate
      users.
    - Assign user-specific write permissions at the prefix level with
      IAM role policy so that users can't overwrite or change other
      users' objects.
    - Instantiate an [[https://aws.amazon.com/s3/][Amazon Simple Storage Service (Amazon S3)]] client.
-   - Use *<input type="file" />* tag that calls the browser's native
+   - Use ~<input type="file" />~ tag that calls the browser's native
      file interface, and upload the chosen file to an Amazon S3
      bucket, with 'public-read' permissions.
-** Additional Resources
+** Additional resources
    For in-depth user guides, API documentation, developer forums, and
    other developer resources, see the [[https://aws.amazon.com/sdk-for-browser/][AWS SDK for JavaScript in the
    Browser]] page.
@@ -208,7 +222,6 @@
    For more details on the Okta Sign-In Widget, see the
    [[http://developer.okta.com/code/javascript/okta_sign-in_widget.html][Okta Sign-In Widget Overview]] or the
    [[http://developer.okta.com/code/javascript/okta_sign-in_widget_ref][Okta Sign-In Widget reference]].
-
 
 * Code
   This section describes the code used in this sample
@@ -257,6 +270,13 @@
    #+END_SRC
 ** JavaScript for sample.html
 
+   Here is the JavaScript used in sample.html, it is followed by
+   a detailed description of how it works:
+
+   #+BEGIN_SRC javascript :noweb yes :export yes
+   <<sample-javascript>>
+   #+END_SRC
+
    The most important part of this sample is the configuration
    variables for AWS and Okta.
 
@@ -280,7 +300,7 @@
 
    The JavaScript in =sample.html= is described below.
 
-   The variables below are needed to configure the AWS JS SDK:
+   These variables are needed to configure the AWS JS SDK:
    #+NAME: aws-config-variables
    #+BEGIN_SRC javascript
      // e.g.: example.okta.com
@@ -338,7 +358,7 @@
    #+NAME: setup-selectors
    #+BEGIN_SRC javascript
      var fileChooser = document.getElementById('file-chooser');
-     var button = document.getElementById('upload-button');
+     var uploadButton = document.getElementById('upload-button');
      var results = document.getElementById('results');
      var oktaLoginContainer = document.getElementById('okta-login-container');
      var uploadDialog = document.getElementById('upload-dialog');
@@ -347,33 +367,33 @@
    This code sets up a event listener for the "Upload to S3"
    button. The "Upload to S3" button is hidden until a user has
    succesfully authentiated against Okta and AWS. Note the use
-   of the =bucket= global variable, which is only populated after a
+   of the =bucket= /global variable/, which is only populated after a
    user sucessfully authenticates.
 
    #+NAME: handle-button-clicks
    #+BEGIN_SRC javascript
-     button.addEventListener('click', function () {
-         var file = fileChooser.files[0];
-         if (file) {
-             results.innerHTML = '';
-             // e.g.: "okta-00u0abcd1eFghIJKl2m3/Ajax-loader.gif"
-             var objKey = 'okta-' + oktaUserId + '/' + file.name;
-             var params = {
-                 Key: objKey,
-                 ContentType: file.type,
-                 Body: file,
-                 ACL: 'public-read'
-             };
-             bucket.putObject(params, function (err, data) {
-                 if (err) {
-                     results.innerHTML = 'ERROR: ' + err;
-                 } else {
-                     listObjs();
-                 }
-             });
-         } else {
-             results.innerHTML = 'Nothing to upload.';
-         }
+     uploadButton.addEventListener('click', function () {
+       var file = fileChooser.files[0];
+       if (file) {
+         results.innerHTML = '';
+         // e.g.: "okta-00u0abcd1eFghIJKl2m3/Ajax-loader.gif"
+         var objKey = 'okta-' + oktaUserId + '/' + file.name;
+         var params = {
+           Key: objKey,
+           ContentType: file.type,
+           Body: file,
+           ACL: 'public-read'
+         };
+         bucket.putObject(params, function (err, data) {
+           if (err) {
+             results.innerHTML = 'ERROR: ' + err;
+           } else {
+             listObjs();
+           }
+         });
+       } else {
+         results.innerHTML = 'Nothing to upload.';
+       }
      }, false);
    #+END_SRC
 
@@ -386,18 +406,18 @@
    #+NAME: list-s3-objects-function
    #+BEGIN_SRC javascript
      function listObjs() {
-         var prefix = 'okta-' + oktaUserId;
-         bucket.listObjects({ Prefix: prefix }, function (err, data) {
-             if (err) {
-                 results.innerHTML = 'ERROR: ' + err;
-             } else {
-                 var objKeys = "";
-                 data.Contents.forEach(function (obj) {
-                     objKeys += obj.Key + "<br>";
-                 });
-                 results.innerHTML = objKeys;
-             }
-         });
+       var prefix = 'okta-' + oktaUserId;
+       bucket.listObjects({ Prefix: prefix }, function (err, data) {
+         if (err) {
+           results.innerHTML = 'ERROR: ' + err;
+         } else {
+           var objKeys = "";
+           data.Contents.forEach(function (obj) {
+             objKeys += obj.Key + "<br>";
+           });
+           results.innerHTML = objKeys;
+         }
+       });
      }
    #+END_SRC
 
@@ -411,13 +431,13 @@
    #+NAME: setup-sign-in-widget
    #+BEGIN_SRC javascript
      var oktaSignIn = new OktaSignIn({
-         authParams: {
-             responseType: 'id_token',
-             responseMode: 'okta_post_message',
-             scopes: ['openid', 'groups']
-         },
-         clientId: OKTA_CLIENT_ID,
-         baseUrl: OKTA_ORG_URL
+       authParams: {
+         responseType: 'id_token',
+         responseMode: 'okta_post_message',
+         scopes: ['openid', 'groups']
+       },
+       clientId: OKTA_CLIENT_ID,
+       baseUrl: OKTA_ORG_URL
      });
    #+END_SRC
 
@@ -430,15 +450,15 @@
    #+NAME: run-sign-in-widget
    #+BEGIN_SRC javascript :noweb yes
      oktaSignIn.renderEl(
-         { el: '#okta-login-container' },
-         function (res) {
-             if (res.status === 'SUCCESS') {
-                 <<handle-successful-login>>
-             } else {
-                 console.log('Login status is not "SUCCESS"');
-                 console.log(res);
-             }
+       { el: '#okta-login-container' },
+       function (res) {
+         if (res.status === 'SUCCESS') {
+           <<handle-successful-login>>
+         } else {
+           console.log('Login status is not "SUCCESS"');
+           console.log(res);
          }
+       }
      );
    #+END_SRC
 
@@ -455,8 +475,8 @@
      console.log(res);
      oktaUserId = res.claims.sub;
      AWS.config.credentials = new AWS.WebIdentityCredentials({
-         RoleArn: AWS_ROLE_ARN,
-         WebIdentityToken: res.idToken
+       RoleArn: AWS_ROLE_ARN,
+       WebIdentityToken: res.idToken
      });
    #+END_SRC
 
@@ -475,18 +495,18 @@
    #+NAME: login-to-aws
    #+BEGIN_SRC javascript
      AWS.config.credentials.get(function(err) {
-         if (err) {
-             console.log("Error creating AWS Web Identity: " + err);
-             return;
+       if (err) {
+         console.log("Error creating AWS Web Identity: " + err);
+         return;
+       }
+       bucket = new AWS.S3({
+         params: {
+           Bucket: AWS_S3_BUCKET_NAME
          }
-         bucket = new AWS.S3({
-             params: {
-                 Bucket: AWS_S3_BUCKET_NAME
-             }
-         });
-         oktaLoginContainer.style.display = 'none';
-         uploadDialog.style.display = 'block';
-         listObjs();
+       });
+       oktaLoginContainer.style.display = 'none';
+       uploadDialog.style.display = 'block';
+       listObjs();
      });
    #+END_SRC
 ** Additional code                                                 :noexport:
