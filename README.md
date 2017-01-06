@@ -104,7 +104,7 @@ This sample application also requires that you [enable CORS](http://developer.ok
 
 ## Create an IAM OpenID Connect Provider
 
-1.  Go to the **Identity Providers** section of the [IAM console](https://console.aws.amazon.com/iam/home#policies) and click the "Create Provider" button, select "OpenID Connect", enter your Okta org URL as the **Provider URL** (e.g. `https://example.okta.com`), enter your Okta app *Client ID* as the **Audience**, click "Next Step"
+1.  Go to the **Identity Providers** section of the [IAM console](https://console.aws.amazon.com/iam/home?#/providers) and click the "Create Provider" button, select "OpenID Connect", enter your Okta org URL as the **Provider URL** (e.g. `https://example.okta.com`), enter your Okta app *Client ID* as the **Audience**, click "Next Step"
 2.  Click "Create" to skip the "Verify Provider Information" instructions. *This step is for OIDC providers that sign their OIDC tokens* *using the private key from their HTTPS/TLS certificate. Okta* *signs OIDC tokens using different keys*
 
 
@@ -114,7 +114,7 @@ This sample application also requires that you [enable CORS](http://developer.ok
 
 1.  Go to the **Policies** section of the [IAM console](https://console.aws.amazon.com/iam/home#policies) and click **Create Policy → Create Your Own Policy**.
 2.  Name your policy (e.g. `OktaSample`), copy the JSON policy below to the **Policy Document** text box, and replace the two instances of `YOUR_BUCKET_NAME` with your actual bucket name, and click **Create Policy**.
-3.  Now go to the **Roles** section of the IAM console and click **Create New Role**
+3.  Now go to the **Roles** section of the [IAM console](https://console.aws.amazon.com/iam/home#/roles) and click **Create New Role**
 4.  Name your role (e.g. `OktaSampleRole`) and select **Role for Identity Provider Access → Grant access to web identity providers.**
 5.  Select your Okta org from the **Identity Provider** dropdown and click "Next Step"
 6.  Click "Next Step" on Verify Role Trust.
