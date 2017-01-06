@@ -1,23 +1,23 @@
-- [Okta and AWS in the Browser](#org675501d)
-- [Setting up Okta](#orgccbdb6c)
-  - [Create an Okta OIDC App and get the Client ID for that app](#orgb9ca161)
-  - [Set up CORS in Okta](#org2ca7a9a)
-- [Setting up AWS](#org424d758)
-  - [Create an Amazon S3 bucket and configure CORS](#org2a0bfaf)
-  - [Create an IAM OpenID Connect Provider](#org4ba1d4c)
-  - [Create an IAM Role and Assign Users Logged in through Okta](#orgb2b50c3)
-- [Running the sample](#orga785734)
-  - [Create `sample.html`](#orga9bd21a)
-  - [Run the sample](#org9c4f992)
-  - [About the sample](#orgdb7c91e)
-  - [Additional resources](#orgd542000)
-- [Code](#orgf3766cc)
-  - [sample.html](#orgdfb0644)
-  - [JavaScript for sample.html](#org0940463)
+- [Okta and AWS in the Browser](#org93fbff3)
+- [Setting up Okta](#orga9564ed)
+  - [Create an Okta OIDC App and get the Client ID for that app](#orga3b725e)
+  - [Set up CORS in Okta](#orgd181b60)
+- [Setting up AWS](#orgdb54a25)
+  - [Create an Amazon S3 bucket and configure CORS](#org7dd9bf7)
+  - [Create an IAM OpenID Connect Provider](#orgfdaed95)
+  - [Create an IAM Role and Assign Users Logged in through Okta](#org2b57826)
+- [Running the sample](#orgfde9a67)
+  - [Create `sample.html`](#orgcf7a7d6)
+  - [Run the sample](#orgcd70a8e)
+  - [About the sample](#org07c4108)
+  - [Additional resources](#org2d7a83f)
+- [Code](#org0134d7a)
+  - [sample.html](#org24b33fb)
+  - [JavaScript for sample.html](#orge9113e6)
 
 
 
-<a id="org675501d"></a>
+<a id="org93fbff3"></a>
 
 # Okta and AWS in the Browser
 
@@ -34,12 +34,12 @@ After logging in, the user will get temporary AWS credentials and assume the pre
 > ****Note****! These instructions require that your Okta Org is part of the **OpenID Connect Beta**. If you do not have the ability to create OpenID Connect apps in your Okta org, please contact Okta Support and ask that the `OPENID_CONNECT` flag be enabled for your Okta org.
 
 
-<a id="orgccbdb6c"></a>
+<a id="orga9564ed"></a>
 
 # Setting up Okta
 
 
-<a id="orgb9ca161"></a>
+<a id="orga3b725e"></a>
 
 ## Create an Okta OIDC App and get the Client ID for that app
 
@@ -54,11 +54,11 @@ You will need an OpenID Connect app in Okta for this sample application. You can
 7.  Click "Add URI" and add the `http://localhost:8000/sample.html` URI, then click the "Finish" button.
 8.  Click on the "People" section, click "Assign to People", click the "Assign" button next to your username, click "Save and Go Back", click "Done".
 
-    > **Important:** only users assigned to this app will be able to authenticate!
+    > **Important:** Only users assigned to this app will be able to authenticate!
 9.  Click on the "General" section, scroll down and make note of the "**Client ID**", you will use this when you configure AWS.
 
 
-<a id="org2ca7a9a"></a>
+<a id="orgd181b60"></a>
 
 ## Set up CORS in Okta
 
@@ -69,12 +69,12 @@ This sample application also requires that you [enable CORS](http://developer.ok
 3.  Click the "Edit" button, make sure the "Enable CORS &#x2026;" option is selected, enter `http://localhost:8000` into the text field, then click the "Save" button.
 
 
-<a id="org424d758"></a>
+<a id="orgdb54a25"></a>
 
 # Setting up AWS
 
 
-<a id="org2a0bfaf"></a>
+<a id="org7dd9bf7"></a>
 
 ## Create an Amazon S3 bucket and configure CORS
 
@@ -100,7 +100,7 @@ This sample application also requires that you [enable CORS](http://developer.ok
     ```
 
 
-<a id="org4ba1d4c"></a>
+<a id="orgfdaed95"></a>
 
 ## Create an IAM OpenID Connect Provider
 
@@ -108,7 +108,7 @@ This sample application also requires that you [enable CORS](http://developer.ok
 2.  Click "Create" to skip the "Verify Provider Information" instructions. *This step is for OIDC providers that sign their OIDC tokens* *using the private key from their HTTPS/TLS certificate. Okta* *signs OIDC tokens using different keys*
 
 
-<a id="orgb2b50c3"></a>
+<a id="org2b57826"></a>
 
 ## Create an IAM Role and Assign Users Logged in through Okta
 
@@ -119,7 +119,9 @@ This sample application also requires that you [enable CORS](http://developer.ok
 5.  Select your Okta org from the **Identity Provider** dropdown and click "Next Step"
 6.  Click "Next Step" on Verify Role Trust.
 7.  On the **Attach Policy** step, select the policy you just created (e.g. `OktaSample`), and click **Next Step**, then **Create Role** on the next page.
-8.  Use the JSON below as your for your role. **Important:** Make sure that you replace `YOUR_BUCKET_NAME` and `YOUR_OIDC_PROVIDER_URL` in the policy!
+8.  Use the JSON below as your for your role.
+
+    > **Important:** Make sure that you replace `YOUR_BUCKET_NAME` and `YOUR_OIDC_PROVIDER_URL` in the policy!
 
     ```javascript
     {
@@ -153,19 +155,21 @@ This sample application also requires that you [enable CORS](http://developer.ok
     }
     ```
 
-    If you are wondering, this policy uses [IAM Policy Variables](http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html) to restrict `ListBucket` calls to only the files tha a user has uploaded.
+    > **Important:** Make sure you include `:sub` after the end of your OIDC provider URL. For example `example.okta.com:sub` or `example.oktapreview.com:sub`
+
+    If you are wondering, this policy uses [IAM Policy Variables](http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html) to restrict `ListBucket` calls to only the files that a user has uploaded.
 
 
-<a id="orga785734"></a>
+<a id="orgfde9a67"></a>
 
 # Running the sample
 
 
-<a id="orga9bd21a"></a>
+<a id="orgcf7a7d6"></a>
 
 ## Create `sample.html`
 
-Before you can run the example, you need to create a file named `sample.html` containing the code below.
+Before you can run the example, you need to create a file named "`sample.html`" containing the code below. If you name this file something other than `sample.html`, you'll have to go back and update the settings for your OIDC app.
 
 Replace the variables in `sample.html` with the approprate variables for your system. The variables that you will need to replace are below:
 
@@ -312,7 +316,7 @@ Make sure to replace the variables mentioned above!
 ```
 
 
-<a id="org9c4f992"></a>
+<a id="orgcd70a8e"></a>
 
 ## Run the sample
 
@@ -323,7 +327,7 @@ If you are on Mac OS X or Linux, you can use Python to start a webserver for you
     [okta-oidc-aws]$ python -m SimpleHTTPServer 8000
 
 
-<a id="orgdb7c91e"></a>
+<a id="org07c4108"></a>
 
 ## About the sample
 
@@ -335,7 +339,7 @@ This sample application is designed to show you how to:
 -   Use `<input type="file" />` tag that calls the browser's native file interface, and upload the chosen file to an Amazon S3 bucket, with 'public-read' permissions.
 
 
-<a id="orgd542000"></a>
+<a id="org2d7a83f"></a>
 
 ## Additional resources
 
@@ -344,7 +348,7 @@ For in-depth user guides, API documentation, developer forums, and other develop
 For more details on the Okta Sign-In Widget, see the [Okta Sign-In Widget Overview](http://developer.okta.com/code/javascript/okta_sign-in_widget.html) or the [Okta Sign-In Widget reference](http://developer.okta.com/code/javascript/okta_sign-in_widget_ref).
 
 
-<a id="orgf3766cc"></a>
+<a id="org0134d7a"></a>
 
 # Code
 
@@ -356,7 +360,7 @@ This sample consists of two logical components:
 2.  The JavaScript that powers this sample Single Page Application
 
 
-<a id="orgdfb0644"></a>
+<a id="org24b33fb"></a>
 
 ## sample.html
 
@@ -391,7 +395,7 @@ The JavaScript that powers this sample is covered in the next section.
 ```
 
 
-<a id="org0940463"></a>
+<a id="orge9113e6"></a>
 
 ## JavaScript for sample.html
 

@@ -49,8 +49,9 @@
    8. Click on the "People" section, click "Assign to People", click
       the "Assign" button next to your username, click "Save and Go
       Back", click "Done".
+
       #+BEGIN_QUOTE
-      *Important:* only users assigned to this
+      *Important:* Only users assigned to this
       app will be able to authenticate!
       #+END_QUOTE
    9. Click on the "General" section, scroll down and make note of the
@@ -118,8 +119,12 @@
       (e.g. =OktaSample=), and click *Next Step*, then *Create Role*
       on the next page.
    8. Use the JSON below as your for your role.
+
+      #+BEGIN_QUOTE
       *Important:* Make sure that you replace =YOUR_BUCKET_NAME= and
       =YOUR_OIDC_PROVIDER_URL= in the policy!
+      #+END_QUOTE
+
       #+BEGIN_SRC javascript
         {
             "Version": "2012-10-17",
@@ -152,14 +157,22 @@
         }
       #+END_SRC
 
+      #+BEGIN_QUOTE
+      *Important:* Make sure you include =:sub= after the end of your
+       OIDC provider URL. For example =example.okta.com:sub= or
+       =example.oktapreview.com:sub=
+      #+END_QUOTE
+
       If you are wondering, this policy uses [[http://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html][IAM Policy Variables]] to
-      restrict =ListBucket= calls to only the files tha a user has
+      restrict =ListBucket= calls to only the files that a user has
       uploaded.
 
 * Running the sample
 ** Create =sample.html=
-   Before you can run the example, you need to create a file named =sample.html=
-   containing the code below.
+   Before you can run the example, you need to create a file named
+   "=sample.html=" containing the code below. If you name this file
+   something other than =sample.html=, you'll have to go back and
+   update the settings for your OIDC app.
 
    Replace the variables in =sample.html= with the approprate
    variables for your system. The variables that you will need to
