@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>AWS S3 Explorer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="https://aws.amazon.com/favicon.ico">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.css">
+
+    <!-- Latest CDN production Javascript and CSS: 2.12.0 -->
+    <script src="https://ok1static.oktacdn.com/assets/js/sdk/okta-signin-widget/2.12.0/js/okta-sign-in.min.js" type="text/javascript"></script>
+    <link href="https://ok1static.oktacdn.com/assets/js/sdk/okta-signin-widget/2.12.0/css/okta-sign-in.min.css" type="text/css" rel="stylesheet"/>
+    <!-- Theme file: Customize or replace this file if you want to override our default styles -->
+    <link href="https://ok1static.oktacdn.com/assets/js/sdk/okta-signin-widget/2.12.0/css/okta-theme.css" type="text/css" rel="stylesheet"/>
+    <link href="css/main.css" type="text/css" rel="stylesheet"/>
+  </head>
+
+  <!-- DEBUG: Enable this for red outline on all elements -->
+  <!-- <style media="screen" type="text/css"> * { outline: 1px red solid; } </style> -->
+
+  <body>
+    <div id="okta-login-container"></div>
+    <div id="page-wrapper">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="panel panel-primary">
+
+            <!-- Panel including bucket/folder information and controls -->
+            <div class="panel-heading clearfix">
+              <!-- Bucket selection and breadcrumbs -->
+              <div class="btn-group pull-left">
+                <div class="pull-left">
+                  AWS S3 Explorer&nbsp;
+                </div>
+                <!-- Bucket selection -->
+                <div class="btn pull-left" id="bucket">
+                  <i id="bucket-chooser" style="cursor: pointer;" class="fas fa-cog fa-2x" title="Switch to a different S3 Bucket"></i>
+                </div>
+                <!-- Bucket breadcrumbs -->
+                <div class="btn pull-right">
+                  <ul id="breadcrumb" class="btn breadcrumb pull-right">
+                    <li class="active dropdown">
+                      <a href="#">&lt;bucket&gt;</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <!-- Folder/Bucket radio group and progress spinner -->
+              <div class="btn-group pull-right">
+                <div class="checkbox pull-left">
+                  <label>
+                    <input type="checkbox" id="hidefolders">&nbsp;Hide folders?
+                  </label>
+                  <!-- Folder/Bucket radio group -->
+                  <div class="btn-group" data-toggle="buttons">
+                    <label class="btn btn-primary active" title="View all objects in folder">
+                      <i class="fa fa-angle-double-up"></i>
+                      <input type="radio" name="optionsdepth" value="folder" id="optionfolder" checked>&nbsp;Folder
+                    </label>
+                    <label class="btn btn-primary" title="View all objects in bucket">
+                      <i class="fa fa-angle-double-down"></i>
+                      <input type="radio" name="optionsdepth" value="bucket" id="optionbucket">&nbsp;Bucket
+                    </label>
+                  </div>
+                </div>
+                <!-- Dual purpose: progress spinner and refresh button -->
+                <div class="btn-group pull-right" id="refresh">
+                  <span id="bucket-loader" style="cursor: pointer;" class="btn fa fa-refresh fa-2x pull-left" title="Refresh"></span>
+                  <span id="badgecount" class="badge pull-right">42</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel including S3 object table -->
+            <div class="panel-body">
+              <table class="table table-bordered table-hover table-striped" id="tb-s3objects">
+                <thead>
+                  <tr>
+                    <th>Object</th>
+                    <th>Folder</th>
+                    <th>Last Modified</th>
+                    <th>Timestamp</th>
+                    <th>Size</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-s3objects"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+
+</html>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.207.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.0/moment.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.js"></script>
+
+<script src="js/config.js"></script>
+<script src="js/main.js"></script>

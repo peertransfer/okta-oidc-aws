@@ -1,0 +1,26 @@
+#wrapper {
+  padding-left: 0;
+}
+
+#page-wrapper {
+  width: 100%;
+  padding: 5px 15px;
+  display: none;
+}
+
+#tb-s3objects {
+  width: 100% !Important;
+}
+
+a {
+  color: #00B7FF;
+}
+
+body {
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+td {
+  font: 12px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
