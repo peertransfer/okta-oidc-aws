@@ -1,3 +1,14 @@
+# Environment variables
+| ENV     | Default |
+| --- | --- |
+| FW_VAR_AWS_OIDC_PROVIDER_URL | flywire.oktapreview.com |
+| FW_VAR_AWS_ROLE_ARN | arn:aws:iam::306077209789:role/flywire-okta-oidc-aws-test-role |
+| FW_VAR_AWS_REGION | us-east-1 |
+| FW_VAR_AWS_S3_BUCKET_NAME | flywire-okta-oidc-aws-test |
+| FW_VAR_OKTA_ORG_URL | https://flywire.oktapreview.com |
+| FW_VAR_OKTA_CLIENT_ID | 0oag07d8xpcriufjQ0h7 |
+
+
 - [Okta and AWS in the Browser](#org93fbff3)
 - [Setting up Okta](#orga9564ed)
   - [Create an Okta OIDC App and get the Client ID for that app](#orga3b725e)

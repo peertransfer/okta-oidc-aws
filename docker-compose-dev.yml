@@ -1,0 +1,17 @@
+version: '3'
+services:
+  web:
+    image: flywire/okta-s3-auth
+    command: ["./bin/entrypoint.sh"]
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/usr/share/nginx/html
+    container_name: "okta-s3-auth-dev"
+    environment:
+      FW_VAR_AWS_OIDC_PROVIDER_URL: 'flywire.oktapreview.com'
+      FW_VAR_AWS_ROLE_ARN: 'arn:aws:iam::306077209789:role/flywire-okta-oidc-aws-test-role'
+      FW_VAR_AWS_REGION: 'us-east-1'
+      FW_VAR_AWS_S3_BUCKET_NAME: 'flywire-okta-oidc-aws-test'
+      FW_VAR_OKTA_ORG_URL: 'https://flywire.oktapreview.com'
+      FW_VAR_OKTA_CLIENT_ID: '0oag07d8xpcriufjQ0h7'
